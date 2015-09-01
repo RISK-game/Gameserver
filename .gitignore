@@ -1,6 +1,5 @@
 #=== Gameserver ===
 node_modules
-logs
 *.log
 
 
