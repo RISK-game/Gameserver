@@ -1,0 +1,33 @@
+{
+  "name": "Gameserver",
+  "version": "0.1.0",
+  "description": "A restful server for the game risk",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/RISK-game/Gameserver.git"
+  },
+  "author": [
+    "Filip Lindvall, Andreas Wallström"
+  ],
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/RISK-game/Gameserver/issues"
+  },
+  "homepage": "https://github.com/RISK-game/Gameserver",
+  "devDependencies": {
+    "gulp": "^3.9.0",
+    "nodemon": "^1.4.1"
+  },
+  "dependencies": {
+    "bcrypt-nodejs": "0.0.3",
+    "body-parser": "^1.13.3",
+    "cookie-parser": "^1.3.5",
+    "express": "^4.13.3",
+    "jsonwebtoken": "^5.0.5",
+    "socket.io": "^1.3.6"
+  }
+}
