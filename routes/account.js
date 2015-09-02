@@ -7,6 +7,7 @@
 var Router = require('express').Router();
 var user = require('./../models/user.js');
 var bc = require('bcrypt-nodejs');
+var crypto = require('crypto');
 
 module.exports = function(mongose){
   
@@ -61,10 +62,11 @@ module.exports = function(mongose){
     user.model.find(query, function(err, user){ return (user.length !== 0); });
   };
 
+  /**
+   * Generates a crypto secure token. We can't use Math.random() as anyone can calculate what it will
+   * generate.
+   */
   var genRandomToken = function(){
-    var text = '';
-    for(var i = 0; i < 20; i++)
-      text += 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'.charAt(Math.random() * 62);
-    return text;
+    return crypto.randomBytes(64).toString('hex');
   };
 };
