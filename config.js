@@ -9,9 +9,11 @@
 
 var config = {
   port:3000,
-  host:'localhost',
+  host: 'localhost',
   secretToken: 'SuperSecretMasterMessage',
-  sant:true
+  sant:true,
+  db: 'mongodb://localhost/risk',
+  
 };
 
 
