@@ -1,7 +1,7 @@
 
 var jwt = require('jsonwebtoken');
 
-module.exports = (function(){
+module.exports = function(secret, log){
   var expo = {};
 
   expo.auth = function(req, res, next) {
@@ -19,7 +19,7 @@ module.exports = (function(){
     jwt.verify(jwtCookie, secret, function(err, user){
       if (err){
         // Opsie, an error ocured
-        console.log('A JWT was passed, but it was not signed by us. ' +
+        log.info('A JWT was passed, but it was not signed by us. ' +
             'better keep a look out!');
         return next();
       }
@@ -31,7 +31,7 @@ module.exports = (function(){
 
       req.jwt.userdata = user.email;
       req.jwt.isAuthed = true;
-      console.log('User with email ' + user.email + ' was authenticated ' + 'using JWT!');
+      log.info('User with email ' + user.email + ' was authenticated using JWT!');
       next();
     });
   };
@@ -48,5 +48,5 @@ module.exports = (function(){
   }
 
   return expo;
-})();
+};
 
