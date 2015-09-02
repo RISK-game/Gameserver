@@ -7,6 +7,8 @@
 var Router = require('express').Router();
 var user = require('./../models/user.js');
 var bc = require('bcrypt-nodejs');
+var jwt = require('./../middleware/jwt.js');
+
 
 module.exports = function(mongose){
   
@@ -43,7 +45,7 @@ module.exports = function(mongose){
     // Well for now it's good enough to register now.
     var userToBe  = new user.model({
       username: rb.username,
-      password: bqrypt.hashSync(rb.password),
+      password: bcrypt.hashSync(rb.password),
       email: rb.email,
       secretCode: genRandomToken(),
     });
@@ -55,6 +57,40 @@ module.exports = function(mongose){
       }
       res.json(rm);
     });
+  });
+
+  Router.post('/login', function(req, res){
+    var rb = req.body;
+    var rm = {
+      jwt:'',
+      message:''
+    };
+
+    if (!rb.email || !rb.password) {
+      rm.message = 'You need to enter both email and password to login';
+      return res.json(rm);
+    }
+    
+    user.model.findOne({email:rb.email}, function(err, obj){
+      if (err) {
+        // We made a boo boo
+        // Email probably does not exist, lets blaim it on  that
+        rm.message = 'Email was incorrect';
+        return res.json(rm);
+      }
+      if (bcrypt.compareSync(rb.password, obj.password)){
+        // Create the JWT an send it back.
+        rm.jwt = jwt.signUser(obj.email, Date.now() + 300000, {username:obj.username});
+        rm.message = 'Success! You remembered your password!';
+        return res.json(rm);
+      } else {
+        rm.message = 'Incorrect password';
+        return res.json(rm);
+      }
+      
+    });
+    
+    return false;
   });
   
   var exists = function(query){
