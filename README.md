@@ -11,4 +11,4 @@ This is distributed under the MIT license. Read LICENSE.md
 Authors
 --------
 - S4wny
-- Filip9719
+- drPytho
