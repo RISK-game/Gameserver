@@ -3,19 +3,17 @@ var mongoose = require('mongoose');
 var Schema = mongoose.Schema;
 
 var user = {
-  id:Number,
-  username:String,
-  password:String, // Do not forget to bcrypt
-  email:String, 
-  rank:Number,
-  gamesPlayed:[Number],
+  username    :{type:String, required:true, unique:true, trim:true},
+  password    :{type:String, required:true}, 
+  email       :{type:String, required:true, trim:true}, 
+  rank        :{type:Number, default:1000},
+  gamesPlayed :[Schema.Types.ObjectId],
   stats:{
-    wins:Number,
-    losses:Number
+    wins      :{type: Number, default:0},
+    losses    :{type: Number, default:0}
   },
-  //lastActivity: {type:Date, default: Date.now},
-  created: {type:Date, default:Date.now},
-  verifyToken:String
+  created     :{type:Date, default:Date.now},
+  verifyToken :{type:String, required:true}
 };
 
 var userSchema = new Schema(user);
