@@ -5,12 +5,15 @@
 */
 
 var Router = require('express').Router();
+var config = require('./../config.js');
 var user = require('./../models/user.js');
+
 var bc = require('bcrypt-nodejs');
 var crypto = require('crypto');
 
-module.exports = function(mongose){
-  
+
+module.exports = function(mongoose, log){
+  var jwt = require('./../middleware/jwt.js')(config.secretToken, log);  
   Router.post('/register', function(req, res){
     var rb = req.body;
     var rm = {
@@ -20,19 +23,19 @@ module.exports = function(mongose){
       password:'',                //'"Password" is not a good password',
       server:'',                  //'Ain\'t no problem like a server problem'
     }
-
-    if (exists({username:rb.username})){
+    log.info('The body is \n' + JSON.stringify(req.body, null, 2));
+    if (!rb.username || rb.username.length < 4 || exists({username:rb.username})){
       rm.success = false;
       rm.username = 'Username is already in use';
     }
 
-    if (exists({email:rb.email})){
+    if (!rb.email || exists({email:rb.email})){
       rm.success = false;
       rm.email = 'An account is already registerd to time email. Try resetting the password or call 911';
     }
 
     // Check password
-    if (rb.password.length < 8 || rb.password.toLowerCase() === rb.password || rb.password.toUpperCase() === rb.password){
+    if (!rb.password || rb.password.length < 8 || rb.password.toLowerCase() === rb.password || rb.password.toUpperCase() === rb.password){
       rm.success = false;
       rm.password = 'Password did not follow the standards';
     }
@@ -44,22 +47,57 @@ module.exports = function(mongose){
     // Well for now it's good enough to register now.
     var userToBe  = new user.model({
       username: rb.username,
-      password: bqrypt.hashSync(rb.password),
+      password: bcrypt.hashSync(rb.password),
       email: rb.email,
-      secretCode: genRandomToken(),
+      verifyToken: genRandomToken()
     });
 
     userToBe.save(function(err){
       if (err){
-        rm.success = false;        
+        log.warn(err);
+        rm.success = false;
         rm.server = 'Ain\'t no problem like a server problem';
       }
       res.json(rm);
     });
   });
+
+  Router.post('/login', function(req, res){
+    var rb = req.body;
+    var rm = {
+      jwt:'',
+      message:''
+    };
+
+    if (!rb.email || !rb.password) {
+      rm.message = 'You need to enter both email and password to login';
+      return res.json(rm);
+    }
+    
+    user.model.findOne({email:rb.email}, function(err, obj){
+      if (err) {
+        // We made a boo boo
+        // Email probably does not exist, lets blaim it on  that
+        rm.message = 'Email was incorrect';
+        return res.json(rm);
+      }
+      if (bcrypt.compareSync(rb.password, obj.password)){
+        // Create the JWT an send it back.
+        rm.jwt = jwt.signUser(obj.email, Date.now() + 1000 * 60 * 60 * 24 * 30, {username:obj.username});
+        rm.message = 'Success! You remembered your password!';
+        return res.json(rm);
+      } else {
+        rm.message = 'Incorrect password';
+        return res.json(rm);
+      }
+      
+    });
+    
+    return false;
+  });
   
   var exists = function(query){
-    user.model.find(query, function(err, user){ return (user.length !== 0); });
+    user.model.find(query, function(err, user){ return !(err || user.length == 0); });
   };
 
   /**
@@ -69,4 +107,6 @@ module.exports = function(mongose){
   var genRandomToken = function(){
     return crypto.randomBytes(64).toString('hex');
   };
+
+  return Router;
 };
