@@ -35,13 +35,15 @@ app.use(morgan('combined'));
  * This will save the validated information in
  * the request object.
  */
+
 app.use(jwt.auth);
 
 app.use('/acc', require('./routes/account.js')(mongoose, log));
 
 // Load index.html which will start the Angular.js app
 app.all('/', function (req, res, next) {
-  log.info(JSON.stringify(req.body, null, 2));
+  if (req.jwt.isAuthed)
+    return res.send('Authentiated');
   res.json({foo:'bar'});
 });
 

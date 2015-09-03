@@ -5,13 +5,14 @@
 */
 
 var Router = require('express').Router();
+var config = require('./../config.js');
 var user = require('./../models/user.js');
 var bcrypt = require('bcrypt-nodejs');
-var jwt = require('./../middleware/jwt.js');
 
 
-module.exports = function(mongose, log){
-  
+
+module.exports = function(mongoose, log){
+  var jwt = require('./../middleware/jwt.js')(config.secretToken, log);  
   Router.post('/register', function(req, res){
     var rb = req.body;
     var rm = {
@@ -47,7 +48,7 @@ module.exports = function(mongose, log){
       username: rb.username,
       password: bcrypt.hashSync(rb.password),
       email: rb.email,
-      secretCode: genRandomToken(),
+      verifyToken: genRandomToken()
     });
 
     userToBe.save(function(err){
@@ -81,7 +82,7 @@ module.exports = function(mongose, log){
       }
       if (bcrypt.compareSync(rb.password, obj.password)){
         // Create the JWT an send it back.
-        rm.jwt = jwt.signUser(obj.email, Date.now() + 300000, {username:obj.username});
+        rm.jwt = jwt.signUser(obj.email, Date.now() + 1000 * 60 * 60 * 24 * 30, {username:obj.username});
         rm.message = 'Success! You remembered your password!';
         return res.json(rm);
       } else {
