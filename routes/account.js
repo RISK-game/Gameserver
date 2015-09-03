@@ -40,7 +40,7 @@ module.exports = function(mongoose, log){
       rm.success = false;
     }
 
-    if (!rm.success) return res.json(rm);
+    if (!rm.success) return res.status(400).json(rm);
 
     if (exists({username:rb.username})){
       rm.success = false;
@@ -52,7 +52,7 @@ module.exports = function(mongoose, log){
       rm.email = 'An account is already registerd to time email. Try resetting the password or call 911';
     }
     
-    if (!rm.success) return res.json(rm);
+    if (!rm.success) return res.status(416).json(rm); // Im a teapot
 
     // Well for now it's good enough to register now.
     // Lets create the user.
@@ -67,6 +67,7 @@ module.exports = function(mongoose, log){
     userToBe.save(function(err){
       if (err){
         log.warn(err);
+        res.status(500);
         rm.success = false;
         rm.server = 'Ain\'t no problem like a server problem';
       }
@@ -83,7 +84,7 @@ module.exports = function(mongoose, log){
 
     if (!isValidData('email', rb.email) || !isValidData('password', rb.password)) {
       rm.message = 'You need to enter both email and password to login';
-      return res.json(rm);
+      return res.status(400).json(rm);
     }
     
     user.model.findOne({email:rb.email}, function(err, obj){
@@ -91,7 +92,7 @@ module.exports = function(mongoose, log){
         // We made a boo boo
         // Email probably does not exist, lets blaim it on  that
         rm.message = 'Email was incorrect';
-        return res.json(rm);
+        return res.status(400).json(rm);
       }
       if (bcrypt.compareSync(rb.password, obj.password)){
         // Create the JWT an send it back.
@@ -100,28 +101,32 @@ module.exports = function(mongoose, log){
         return res.json(rm);
       } else {
         rm.message = 'Incorrect password';
-        return res.json(rm);
+        return res.status(400).json(rm);
       }
     });
   });
   
   Router.post('/edit', function(req, res){
     // What they want to edit on the user.
+    
+    if (!req.jwt.isAuthed) return res.status(401).send('You need to be authorized for this action.');
+    
     var action = req.body.action;
     var value = req.body.value;
     // Validate action and value.
     if (['email', 'username', 'password'].indexOf(action) === -1)
-      return res.send('Action not allowed');
+      return res.status(403).send('Action not allowed');
     
     if (!isValidData(action, value))
-      return res.send('Bad data sent');
-
+      return res.status(400).send('Bad data sent');
+    
     var data = {};
     data[action] = value;
     user.model.update({email:req.jwt.email}, data, function(err, data){
       if (err){
         // User was not updated.
-        return res.send('Failed to update user');
+        // Internal servere error. Could be user
+        return res.status(500).send('Failed to update user');
       }
       return res.send('User updated');
     });
