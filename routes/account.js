@@ -24,34 +24,46 @@ module.exports = function(mongoose, log){
       server:'',                  //'Ain\'t no problem like a server problem'
     }
     log.info('The body is \n' + JSON.stringify(req.body, null, 2));
-    if (!rb.username || rb.username.length < 4 || exists({username:rb.username})){
+    
+    if (!isValidData('username', rb.username)){
+      rm.username = 'Username did not follow our requirements';
+      rm.success = false;
+    }
+
+    if (!isValidData('email', rb.email)){
+      rm.username = 'Please enter a valid email.';
+      rm.success = false;
+    }
+
+    if (!isValidData('password', rb.password)){
+      rm.username = 'Password was not secure enough! Please try again.';
+      rm.success = false;
+    }
+
+    if (!rm.success) return res.json(rm);
+
+    if (exists({username:rb.username})){
       rm.success = false;
       rm.username = 'Username is already in use';
     }
 
-    if (!rb.email || exists({email:rb.email})){
+    if (exists({email:rb.email})){
       rm.success = false;
       rm.email = 'An account is already registerd to time email. Try resetting the password or call 911';
     }
-
-    // Check password
-    if (!rb.password || rb.password.length < 8 || rb.password.toLowerCase() === rb.password || rb.password.toUpperCase() === rb.password){
-      rm.success = false;
-      rm.password = 'Password did not follow the standards';
-    }
-
-    if (!rm.success){
-      return res.json(rm);
-    }
+    
+    if (!rm.success) return res.json(rm);
 
     // Well for now it's good enough to register now.
+    // Lets create the user.
     var userToBe  = new user.model({
       username: rb.username,
       password: bcrypt.hashSync(rb.password),
       email: rb.email,
       verifyToken: genRandomToken()
     });
-
+    
+    // And then save hen.
     userToBe.save(function(err){
       if (err){
         log.warn(err);
@@ -69,7 +81,7 @@ module.exports = function(mongoose, log){
       message:''
     };
 
-    if (!rb.email || !rb.password) {
+    if (!isValidData('email', rb.email) || !isValidData('password', rb.password)) {
       rm.message = 'You need to enter both email and password to login';
       return res.json(rm);
     }
@@ -90,12 +102,49 @@ module.exports = function(mongoose, log){
         rm.message = 'Incorrect password';
         return res.json(rm);
       }
-      
     });
-    
-    return false;
   });
   
+  Router.post('/edit', function(req, res){
+    // What they want to edit on the user.
+    var action = req.body.action;
+    var value = req.body.value;
+    // Validate action and value.
+    if (['email', 'username', 'password'].indexOf(action) === -1)
+      return res.send('Action not allowed');
+    
+    if (!isValidData(action, value))
+      return res.send('Bad data sent');
+
+    var data = {};
+    data[action] = value;
+    user.model.update({email:req.jwt.email}, data, function(err, data){
+      if (err){
+        // User was not updated.
+        return res.send('Failed to update user');
+      }
+      return res.send('User updated');
+    });
+  });
+
+  var isValidData = function(type, value){
+    switch (type){
+      case 'email':
+        return (/^([\w-]+(?:\.[\w-]+)*)@((?:[\w-]+\.)*\w[\w-]{0,66})\.([a-z]{2,6}(?:\.[a-z]{2})?)$/i).test(value);
+        break;
+      case 'username':
+        return (typeof value === 'string' && value.length >= 4 && value !== 'Bill Hater');
+        break;
+      case 'password':
+        return (typeof value === 'string' && value.length >= 8 && value !== 'Password' && 
+                rb.password.toLowerCase() === rb.password && 
+                rb.password.toUpperCase() === rb.password && !!value.match(/\d+/g));
+
+      default:
+        return false;
+    }
+  };
+
   var exists = function(query){
     user.model.find(query, function(err, user){ return !(err || user.length == 0); });
   };

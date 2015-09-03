@@ -31,7 +31,7 @@ module.exports = function(secret, log){
         return next();
       }
 
-      req.jwt.userdata = user.email;
+      req.jwt.email = user.email;
       req.jwt.isAuthed = true;
       log.info('User with email ' + user.email + ' was authenticated using JWT!');
       next();
