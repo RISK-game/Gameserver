@@ -9,6 +9,7 @@ var cookieParser  = require('cookie-parser');
 var bodyParser    = require('body-parser');
 var winston       = require('winston');
 var morgan        = require('morgan');
+var mongoose      = require('mongoose');
 
 var log = new (winston.Logger)({
   transports:[
@@ -19,6 +20,7 @@ var log = new (winston.Logger)({
 
 var jwt = require('./middleware/jwt.js')(config.secretToken, log);
 
+mongoose.connect(config.db);
 
 var app = express();
 
@@ -35,8 +37,11 @@ app.use(morgan('combined'));
  */
 app.use(jwt.auth);
 
+app.use('/acc', require('./routes/account.js')(mongoose, log));
+
 // Load index.html which will start the Angular.js app
-app.get('/', function (req, res, next) {
+app.all('/', function (req, res, next) {
+  log.info(JSON.stringify(req.body, null, 2));
   res.json({foo:'bar'});
 });
 

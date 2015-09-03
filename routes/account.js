@@ -6,11 +6,11 @@
 
 var Router = require('express').Router();
 var user = require('./../models/user.js');
-var bc = require('bcrypt-nodejs');
+var bcrypt = require('bcrypt-nodejs');
 var jwt = require('./../middleware/jwt.js');
 
 
-module.exports = function(mongose){
+module.exports = function(mongose, log){
   
   Router.post('/register', function(req, res){
     var rb = req.body;
@@ -21,19 +21,19 @@ module.exports = function(mongose){
       password:'',                //'"Password" is not a good password',
       server:'',                  //'Ain\'t no problem like a server problem'
     }
-
-    if (exists({username:rb.username})){
+    log.info('The body is \n' + JSON.stringify(req.body, null, 2));
+    if (!rb.username || rb.username.length < 4 || exists({username:rb.username})){
       rm.success = false;
       rm.username = 'Username is already in use';
     }
 
-    if (exists({email:rb.email})){
+    if (!rb.email || exists({email:rb.email})){
       rm.success = false;
       rm.email = 'An account is already registerd to time email. Try resetting the password or call 911';
     }
 
     // Check password
-    if (rb.password.length < 8 || rb.password.toLowerCase() === rb.password || rb.password.toUpperCase() === rb.password){
+    if (!rb.password || rb.password.length < 8 || rb.password.toLowerCase() === rb.password || rb.password.toUpperCase() === rb.password){
       rm.success = false;
       rm.password = 'Password did not follow the standards';
     }
@@ -52,7 +52,8 @@ module.exports = function(mongose){
 
     userToBe.save(function(err){
       if (err){
-        rm.success = false;        
+        log.warn(err);
+        rm.success = false;
         rm.server = 'Ain\'t no problem like a server problem';
       }
       res.json(rm);
@@ -94,7 +95,7 @@ module.exports = function(mongose){
   });
   
   var exists = function(query){
-    user.model.find(query, function(err, user){ return (user.length !== 0); });
+    user.model.find(query, function(err, user){ return !(err || user.length == 0); });
   };
 
   var genRandomToken = function(){
@@ -103,4 +104,6 @@ module.exports = function(mongose){
       text += 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'.charAt(Math.random() * 62);
     return text;
   };
+
+  return Router;
 };
