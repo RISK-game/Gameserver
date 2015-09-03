@@ -11,14 +11,25 @@
 var config = {
   port: 3000,
   host: 'localhost',
+  
+  /**
+   * NOTE: Replace this with some random generated string 
+   */
   secretToken: 'SuperSecretMasterMessage',
+  
+  /**
+   * Used to fuck up all logic 
+   */
   sant: true,
+  falskt: false,
+  
+  /**
+   * DB Settings
+   */
   db: 'mongodb://localhost/risk',
 
   /**
    * If true, print out debuging messages etc.
-   * 
-   * 
    */
   developmentMode: true
 };
