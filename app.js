@@ -20,36 +20,71 @@ var log = new (winston.Logger)({
 
 var jwt = require('./middleware/jwt.js')(config.secretToken, log);
 
+
+log.info('Connecting to mongodb...');
 mongoose.connect(config.db);
 
 var app = express();
 
-app.use(cookieParser());
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({extended:true}));
+app = addMiddlewares(app);
+app = addRoutes(app);
 
-app.use(morgan('combined'));
-
-/*
- * Authenticate the users with the jwt 
- * passed along.
- * This will save the validated information in
- * the request object.
- */
-
-app.use(jwt.auth);
-
-app.use('/acc', require('./routes/account.js')(mongoose, log));
-
-// Load index.html which will start the Angular.js app
-app.all('/', function (req, res, next) {
-  if (req.jwt.isAuthed)
-    return res.send('Authentiated');
-  res.json({foo:'bar'});
-});
-
+log.info('Starting HTTP server...');
 var server = app.listen(config.port, config.host, function () {
   var host = server.address().address
   var port = server.address().port;
   log.info('Example app listening at http://%s:%s', host, port);
 });
+
+
+
+/**
+ * Add middlewares
+ */
+function addMiddlewares(app) {
+  app.use(cookieParser());
+  app.use(bodyParser.json());
+  app.use(bodyParser.urlencoded({extended:true}));
+  
+  // Allow other websites to make AJAX request to this REST service via AJAX
+  app.use(function (req, res, next) {
+      // Website you wish to allow to connect
+      res.setHeader('Access-Control-Allow-Origin', 'http://localhost:8080');
+  
+      // Request methods you wish to allow
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
+  
+      // Pass to next layer of middleware
+      next();
+  });
+  
+  app.use(morgan('combined'));
+  
+  
+  /*
+   * Authenticate the users with the jwt 
+   * passed along.
+   * This will save the validated information in
+   * the request object.
+   */
+  app.use(jwt.auth);
+
+  return app;
+}
+
+
+/**
+ * Add all routes to the app
+ */
+function addRoutes(app) {
+  app.use('/acc', require('./routes/account.js')(mongoose, log));
+
+  // Load index.html which will start the Angular.js app
+  app.all('/', function (req, res, next) {
+    if (req.jwt.isAuthed)
+      return res.send('Authentiated');
+    res.json({foo:'bar'});
+  });
+
+  return app;
+}
