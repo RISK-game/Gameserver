@@ -26,6 +26,7 @@ var gameState = {
   },
   actions:[{
     actionName          :String,
+    palyerIndex         :Number,
     time                :{type:Date, default:Date.now},
     data                :Schema.Types.Mixed
   }]

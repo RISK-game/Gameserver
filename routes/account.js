@@ -8,7 +8,7 @@ var Router = require('express').Router();
 var config = require('./../config.js');
 var user = require('./../models/user.js');
 
-var bc = require('bcrypt-nodejs');
+var bcrypt = require('bcrypt-nodejs');
 var crypto = require('crypto');
 
 
@@ -49,7 +49,8 @@ module.exports = function(mongoose, log){
 
     if (exists({email:rb.email})){
       rm.success = false;
-      rm.email = 'An account is already registerd to time email. Try resetting the password or call 911';
+      rm.email = 'An account is already registerd to time email.' + 
+        ' Try resetting the password or call 911';
     }
     
     if (!rm.success) return res.status(416).json(rm); // Im a teapot
@@ -110,10 +111,11 @@ module.exports = function(mongoose, log){
     // What they want to edit on the user.
     
     if (!req.jwt.isAuthed) return res.status(401).send('You need to be authorized for this action.');
-    
+
     var action = req.body.action;
     var value = req.body.value;
     // Validate action and value.
+    log.info('Change ' + action + ' to ' + value);
     if (['email', 'username', 'password'].indexOf(action) === -1)
       return res.status(403).send('Action not allowed');
     
@@ -128,7 +130,24 @@ module.exports = function(mongoose, log){
         // Internal servere error. Could be user
         return res.status(500).send('Failed to update user');
       }
+      // If its an email that was updated, you need to generate a new jwt
       return res.send('User updated');
+    });
+  });
+
+  Router.post('/get', function(req, res){
+    if (!req.jwt.isAuthed)
+      return res.status(403).send('Unauthorized');
+    // What data you want to get
+    var action = req.body.action;
+    if (['username', 'email', 'rank', 'wins', 'losses'].indexOf(action) === -1)
+      return res.status(401).send('Action not allowed');
+    
+    user.model.findOne({email:req.jwt.email}, action, function(err, ac){
+      if (err) {
+        return res.status(500).send('We made an opsy..');
+      }
+      return res.send(''+ac[action]);
     });
   });
 
@@ -138,13 +157,13 @@ module.exports = function(mongoose, log){
         return (/^([\w-]+(?:\.[\w-]+)*)@((?:[\w-]+\.)*\w[\w-]{0,66})\.([a-z]{2,6}(?:\.[a-z]{2})?)$/i).test(value);
         break;
       case 'username':
-        return (typeof value === 'string' && value.length >= 4 && value !== 'Bill Hater');
+        return (typeof value === 'string' && value.length >= 4);
         break;
       case 'password':
-        return (typeof value === 'string' && value.length >= 8 && value !== 'Password' && 
-                rb.password.toLowerCase() === rb.password && 
-                rb.password.toUpperCase() === rb.password && !!value.match(/\d+/g));
-
+        return (typeof value === 'string' && value.length >= 8 &&
+                value.toLowerCase() !== value && 
+                value.toUpperCase() !== value &&
+                !!value.match(/\d+/g));
       default:
         return false;
     }
@@ -164,3 +183,4 @@ module.exports = function(mongoose, log){
 
   return Router;
 };
+
