@@ -12,6 +12,14 @@ Stack
  - node
 
 
+Developing
+----------
+
+### Git flow
+
+We use [simple git flow](https://gist.github.com/jbenet/ee6c9ac48068889b0912).
+
+
 License
 --------
 This is distributed under the MIT license. Read LICENSE.md
