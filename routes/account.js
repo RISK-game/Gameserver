@@ -131,7 +131,7 @@ module.exports = function(mongoose, log){
         return res.status(500).send('Failed to update user');
       }
       // If its an email that was updated, you need to generate a new jwt
-      return res.send('User updated');
+      return res.send('User updated' + (action==='email') ? ' - Update jwt to regain access':'');
     });
   });
 
