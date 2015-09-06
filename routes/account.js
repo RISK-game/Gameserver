@@ -116,7 +116,7 @@ module.exports = function(mongoose, log){
     var value = req.body.value;
     // Validate action and value.
     log.info('Change ' + action + ' to ' + value);
-    if (['email', 'username', 'password'].indexOf(action) === -1)
+    if (['username', 'password'].indexOf(action) === -1)
       return res.status(403).send('Action not allowed');
     
     if (!isValidData(action, value))
@@ -131,7 +131,7 @@ module.exports = function(mongoose, log){
         return res.status(500).send('Failed to update user');
       }
       // If its an email that was updated, you need to generate a new jwt
-      return res.send('User updated' + (action==='email') ? ' - Update jwt to regain access':'');
+      return res.send('User updated');
     });
   });
 
