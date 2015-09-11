@@ -14,46 +14,45 @@ var crypto = require('crypto');
 
 module.exports = function(mongoose, log){
   var jwt = require('./../middleware/jwt.js')(config.secretToken, log);  
+  
   Router.post('/register', function(req, res){
     var rb = req.body;
-    var rm = {
-      success:true,
-      username:'',                //'Sorry, bill gates is already spoken for',
-      email:'',                   //'joe@biden.ru',
-      password:'',                //'"Password" is not a good password',
-      server:'',                  //'Ain\'t no problem like a server problem'
-    }
+    var response = {
+      success: true,
+      errorMessages: [],
+    };
+
     log.info('The body is \n' + JSON.stringify(req.body, null, 2));
     
-    if (!isValidData('username', rb.username)){
-      rm.username = 'Username did not follow our requirements';
-      rm.success = false;
-    }
+    // Validate
+    if (!isValidData('username', rb.username))
+      response.errorMessages.push('Username did not follow our requirements');
 
-    if (!isValidData('email', rb.email)){
-      rm.username = 'Please enter a valid email.';
-      rm.success = false;
-    }
+    if (!isValidData('email', rb.email))
+      response.errorMessages.push('Please enter a valid email.');
 
-    if (!isValidData('password', rb.password)){
-      rm.username = 'Password was not secure enough! Please try again.';
-      rm.success = false;
-    }
+    if (!isValidData('password', rb.password))
+      response.errorMessages.push('Password was not secure enough! Please try again.');
 
-    if (!rm.success) return res.status(400).json(rm);
+    response.success = (response.errorMessages.length > 0) ? false : true;
 
-    if (exists({username:rb.username})){
-      rm.success = false;
-      rm.username = 'Username is already in use';
-    }
+    // Error, return back
+    if (!response.success) 
+      return res.status(400).json(response);
 
-    if (exists({email:rb.email})){
-      rm.success = false;
-      rm.email = 'An account is already registerd to time email.' + 
-        ' Try resetting the password or call 911';
-    }
+
+    if (exists({username:rb.username}))
+      response.errorMessages.push('Username is already in use');
+
+    if (exists({email:rb.email}))
+      response.errorMessages.push('An account is already registered to this email.');
     
-    if (!rm.success) return res.status(416).json(rm); // Im a teapot
+    response.success = (response.errorMessages.length > 0) ? false : true;
+
+    if (!response.success)
+      return res.status(416).json(response); // Im a teapot
+
+
 
     // Well for now it's good enough to register now.
     // Lets create the user.
@@ -69,10 +68,11 @@ module.exports = function(mongoose, log){
       if (err){
         log.warn(err);
         res.status(500);
-        rm.success = false;
-        rm.server = 'Ain\'t no problem like a server problem';
+        response.success = false;
+        response.errorMessages.push('Ain\'t no problem like a server problem');
       }
-      res.json(rm);
+      
+      res.json(response);
     });
   });
 
@@ -138,6 +138,7 @@ module.exports = function(mongoose, log){
   Router.post('/get', function(req, res){
     if (!req.jwt.isAuthed)
       return res.status(403).send('Unauthorized');
+    
     // What data you want to get
     var action = req.body.action;
     if (['username', 'email', 'rank', 'wins', 'losses'].indexOf(action) === -1)
