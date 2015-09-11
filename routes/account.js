@@ -8,7 +8,6 @@ var Router = require('express').Router();
 var config = require('./../config.js');
 var user = require('./../models/user.js');
 
-var bcrypt = require('bcrypt-nodejs');
 var crypto = require('crypto');
 
 
@@ -24,85 +23,54 @@ module.exports = function(mongoose, log){
 
     log.info('The body is \n' + JSON.stringify(req.body, null, 2));
     
-    // Validate
-    if (!isValidData('username', rb.username))
-      response.errorMessages.push('Username did not follow our requirements');
-
-    if (!isValidData('email', rb.email))
-      response.errorMessages.push('Please enter a valid email.');
-
-    if (!isValidData('password', rb.password))
-      response.errorMessages.push('Password was not secure enough! Please try again.');
-
-    response.success = (response.errorMessages.length > 0) ? false : true;
-
-    // Error, return back
-    if (!response.success) 
-      return res.status(400).json(response);
-
-
-    if (exists({username:rb.username}))
-      response.errorMessages.push('Username is already in use');
-
-    if (exists({email:rb.email}))
-      response.errorMessages.push('An account is already registered to this email.');
-    
-    response.success = (response.errorMessages.length > 0) ? false : true;
-
-    if (!response.success)
-      return res.status(416).json(response); // Im a teapot
-
-
-
-    // Well for now it's good enough to register now.
-    // Lets create the user.
     var userToBe  = new user.model({
       username: rb.username,
-      password: bcrypt.hashSync(rb.password),
+      password: rb.password,
       email: rb.email,
       verifyToken: genRandomToken()
     });
     
-    // And then save hen.
+    // Validation is executed when calling .save()
+    // Validation errors are catched by if(err)
     userToBe.save(function(err){
-      if (err){
+      if (err) {
         log.warn(err);
-        res.status(500);
+        res.status(400);
         response.success = false;
-        response.errorMessages.push('Ain\'t no problem like a server problem');
+        response.errorMessages = extractMongooseValidationMessages(err);
       }
-      
+
       res.json(response);
     });
   });
 
   Router.post('/login', function(req, res){
     var rb = req.body;
-    var rm = {
+    var response = {
       jwt:'',
       message:''
     };
 
     if (!isValidData('email', rb.email) || !isValidData('password', rb.password)) {
-      rm.message = 'You need to enter both email and password to login';
-      return res.status(400).json(rm);
+      response.message = 'You need to enter both email and password to login';
+      return res.status(400).json(response);
     }
     
     user.model.findOne({email:rb.email}, function(err, obj){
       if (err) {
         // We made a boo boo
         // Email probably does not exist, lets blaim it on  that
-        rm.message = 'Email was incorrect';
-        return res.status(400).json(rm);
+        response.message = 'Email was incorrect';
+        return res.status(400).json(response);
       }
       if (bcrypt.compareSync(rb.password, obj.password)){
         // Create the JWT an send it back.
-        rm.jwt = jwt.signUser(obj.email, Date.now() + 1000 * 60 * 60 * 24 * 30, {username:obj.username});
-        rm.message = 'Success! You remembered your password!';
-        return res.json(rm);
+        response.jwt = jwt.signUser(obj.email, Date.now() + 1000 * 60 * 60 * 24 * 30, {username:obj.username});
+        response.message = 'Success! You remembered your password!';
+        return res.json(response);
       } else {
-        rm.message = 'Incorrect password';
-        return res.status(400).json(rm);
+        response.message = 'Incorrect password';
+        return res.status(400).json(response);
       }
     });
   });
@@ -152,35 +120,26 @@ module.exports = function(mongoose, log){
     });
   });
 
-  var isValidData = function(type, value){
-    switch (type){
-      case 'email':
-        return (/^([\w-]+(?:\.[\w-]+)*)@((?:[\w-]+\.)*\w[\w-]{0,66})\.([a-z]{2,6}(?:\.[a-z]{2})?)$/i).test(value);
-        break;
-      case 'username':
-        return (typeof value === 'string' && value.length >= 4);
-        break;
-      case 'password':
-        return (typeof value === 'string' && value.length >= 8 &&
-                value.toLowerCase() !== value && 
-                value.toUpperCase() !== value &&
-                !!value.match(/\d+/g));
-      default:
-        return false;
-    }
-  };
-
-  var exists = function(query){
-    user.model.find(query, function(err, user){ return !(err || user.length == 0); });
-  };
 
   /**
    * Generates a crypto secure token. We can't use Math.random() as anyone can calculate what it will
    * generate.
    */
-  var genRandomToken = function(){
+  var genRandomToken = function() {
     return crypto.randomBytes(64).toString('hex');
   };
+
+  /**
+   * extractMongooseValidationMessages
+   */
+  var extractMongooseValidationMessages = function(mongooseError) {
+    var errorMessages = [];
+    for(obj in mongooseError.errors) {
+      errorMessages.push(mongooseError.errors[obj].message);
+    }
+
+    return errorMessages;
+  }
 
   return Router;
 };
