@@ -9,6 +9,8 @@ var config = require('./../config.js');
 var user = require('./../models/user.js');
 
 var crypto = require('crypto');
+var bcrypt = require('bcrypt-nodejs');
+
 
 
 module.exports = function(mongoose, log){
@@ -17,8 +19,7 @@ module.exports = function(mongoose, log){
   Router.post('/register', function(req, res){
     var rb = req.body;
     var response = {
-      success: true,
-      errorMessages: [],
+      messages: [],
     };
 
     log.info('The body is \n' + JSON.stringify(req.body, null, 2));
@@ -36,8 +37,7 @@ module.exports = function(mongoose, log){
       if (err) {
         log.warn(err);
         res.status(400);
-        response.success = false;
-        response.errorMessages = extractMongooseValidationMessages(err);
+        response.messages = extractMongooseValidationMessages(err);
       }
 
       res.json(response);
@@ -47,29 +47,29 @@ module.exports = function(mongoose, log){
   Router.post('/login', function(req, res){
     var rb = req.body;
     var response = {
-      jwt:'',
-      message:''
+      jwt: '',
+      messages: []
     };
 
-    if (!isValidData('email', rb.email) || !isValidData('password', rb.password)) {
-      response.message = 'You need to enter both email and password to login';
+    if (typeof rb.username === 'undefined' || typeof rb.password === 'undefined') {
+      response.messages.push('You need to enter both username and password to login');
       return res.status(400).json(response);
     }
     
-    user.model.findOne({email:rb.email}, function(err, obj){
-      if (err) {
+    user.model.findOne({username: rb.username}, function(err, obj){
+      if (err || !obj) {
         // We made a boo boo
-        // Email probably does not exist, lets blaim it on  that
-        response.message = 'Email was incorrect';
+        // Email probably does not exist, lets blame it on that
+        response.messages.push('Username was incorrect');
         return res.status(400).json(response);
       }
       if (bcrypt.compareSync(rb.password, obj.password)){
         // Create the JWT an send it back.
         response.jwt = jwt.signUser(obj.email, Date.now() + 1000 * 60 * 60 * 24 * 30, {username:obj.username});
-        response.message = 'Success! You remembered your password!';
+        response.messages.push('Success! You remembered your password!');
         return res.json(response);
       } else {
-        response.message = 'Incorrect password';
+        response.messages.push('Incorrect password');
         return res.status(400).json(response);
       }
     });
