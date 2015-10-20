@@ -2,11 +2,12 @@
  * This is the logic for handeling accounts.
  * This provides an API to login, register and 
  * check values.
-*/
+ */
 
 var Router = require('express').Router();
 var config = require('./../config.js');
 var user = require('./../models/user.js');
+var helper = require('./../helper.js');
 
 var crypto = require('crypto');
 var bcrypt = require('bcrypt-nodejs');
@@ -37,7 +38,7 @@ module.exports = function(mongoose, log){
       if (err) {
         log.warn(err);
         res.status(400);
-        response.messages = extractMongooseValidationMessages(err);
+        response.messages = helper.extractMongooseValidationMessages(err);
       }
 
       res.json(response);
@@ -65,7 +66,7 @@ module.exports = function(mongoose, log){
       }
       if (bcrypt.compareSync(rb.password, obj.password)){
         // Create the JWT an send it back.
-        response.jwt = jwt.signUser(obj.email, Date.now() + 1000 * 60 * 60 * 24 * 30, {username:obj.username});
+        response.jwt = jwt.signUser(obj.email, Date.now() + 1000 * 60 * 60 * 24 * 30, {username:obj.username, objectId:obj._id});
         response.messages.push('Success! You remembered your password!');
         return res.json(response);
       } else {
@@ -128,18 +129,6 @@ module.exports = function(mongoose, log){
   var genRandomToken = function() {
     return crypto.randomBytes(64).toString('hex');
   };
-
-  /**
-   * extractMongooseValidationMessages
-   */
-  var extractMongooseValidationMessages = function(mongooseError) {
-    var errorMessages = [];
-    for(obj in mongooseError.errors) {
-      errorMessages.push(mongooseError.errors[obj].message);
-    }
-
-    return errorMessages;
-  }
 
   return Router;
 };

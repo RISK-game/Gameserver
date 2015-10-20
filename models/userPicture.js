@@ -6,7 +6,7 @@ var Schema = mongoose.Schema;
  *
  * All pictures are saved here.
  */
-var userPicturesScema = new Schema({
+var userPictureScema = new Schema({
   /**
    * Hex encoded string of the image
    */
@@ -15,7 +15,7 @@ var userPicturesScema = new Schema({
   created : {type:Date, default:Date.now},
 });
 
-var UserPictures = mongoose.model('UserPictures', userPicturesScema);
+var UserPicture = mongoose.model('UserPicture', userPictureScema);
 
-module.exports.schema = userPicturesScema;
-module.exports.model  = UserPictures;
+module.exports.schema = userPictureScema;
+module.exports.model  = UserPicture;

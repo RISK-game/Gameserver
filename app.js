@@ -83,6 +83,7 @@ function addMiddlewares(app) {
  */
 function addRoutes(app) {
   app.use('/acc', require('./routes/account.js')(mongoose, log));
+  app.use('/picture', require('./routes/pictures.js')(mongoose, log));
 
   // Load index.html which will start the Angular.js app
   app.all('/', function (req, res, next) {
