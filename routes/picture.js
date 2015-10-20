@@ -15,6 +15,8 @@ module.exports = function(mongoose, log){
     if (!req.jwt.isAuthed)
       return res.status(403).send('Unauthorized');
     
+    var response = {};
+
     new userPictures.model({
       picture : req.body.picture,
       owner   : req.jwt.user.objectId
@@ -23,6 +25,9 @@ module.exports = function(mongoose, log){
         log.warn(err);
         res.status(400);
         response.messages = helper.extractMongooseValidationMessages(err);
+      }
+      else {
+        response.success = true;
       }
 
       res.json(response);

@@ -1,6 +1,7 @@
 var mongoose = require('mongoose');
 var Schema = mongoose.Schema;
 
+
 /**
  * User Pictures
  *
@@ -16,6 +17,18 @@ var userPictureScema = new Schema({
 });
 
 var UserPicture = mongoose.model('UserPicture', userPictureScema);
+
+
+/**
+ * Validations
+ */
+
+ // Validate BASE64 string?
+UserPicture.schema.path('picture').validate(function(value) {
+  return (/^(?:[A-Za-z0-9+\/]{4})*(?:[A-Za-z0-9+\/]{2}==|[A-Za-z0-9+\/]{3}=)?$/).test(value);
+}, 'Invalid picture');
+
+
 
 module.exports.schema = userPictureScema;
 module.exports.model  = UserPicture;
