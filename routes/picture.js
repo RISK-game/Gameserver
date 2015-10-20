@@ -5,7 +5,7 @@
 var Router = require('express').Router();
 
 var config = require('./../config.js');
-var userPictures = require('./../models/userPictures.js');
+var userPictures = require('./../models/userPicture.js');
 var helper = require('./../helper.js');
 
 module.exports = function(mongoose, log){

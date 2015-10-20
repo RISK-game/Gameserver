@@ -10,8 +10,8 @@ var userPictureScema = new Schema({
   /**
    * Hex encoded string of the image
    */
-  picture : {type:String}
-  owner   : {type:Schema.Types.ObjectId }
+  picture : {type:String},
+  owner   : {type:Schema.Types.ObjectId },
   created : {type:Date, default:Date.now},
 });
 
