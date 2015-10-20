@@ -9,7 +9,6 @@ module.exports = function(secret, log){
     // Check cookies
     req.jwt = req.jwt || {};
     req.jwt.isAuthed = false;
-    req.jwt.userdata = null;
     var jwToken = req.body.jwt;
     log.info('Logging jwToken - ' + jwToken);
     if (typeof jwToken !== 'string'){
@@ -32,6 +31,7 @@ module.exports = function(secret, log){
       }
 
       req.jwt.email = user.email;
+      req.jwt.user = user;
       req.jwt.isAuthed = true;
       log.info('User with email ' + user.email + ' was authenticated using JWT!');
       next();
@@ -46,6 +46,7 @@ module.exports = function(secret, log){
     if (typeof data !== "object") data = {};
     data.email = email;
     data.expires = expires;
+    
     return this.signData(data);
   };
 
