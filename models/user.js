@@ -11,12 +11,6 @@ var userSchema = new Schema({
   username    :{type:String, required:true, unique:true, trim:true},
   password    :{type:String, required:true}, 
   email       :{type:String, required:true, unique:true, trim:true}, 
-  rank        :{type:Number, default:1000},
-  gamesPlayed :[Schema.Types.ObjectId],
-  stats:{
-    wins      :{type: Number, default:0},
-    losses    :{type: Number, default:0}
-  },
   created     :{type:Date, default:Date.now},
   verifyToken :{type:String, required:true}
 });
